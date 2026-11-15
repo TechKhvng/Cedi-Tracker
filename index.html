@@ -267,6 +267,7 @@ function rd(){
  document.querySelectorAll('[data-dp]').forEach(function(b){b.onclick=function(){var q=b.dataset.dp.split('|');debts.forEach(function(x){if(String(x.id)===q[0]){x.pays.splice(+q[1],1);if(x.p&&x.a-paidOf(x)>0.005){x.p=false;x.pd=''}}});dsave();rd()}});
  document.querySelectorAll('[data-de]').forEach(function(b){b.onclick=function(){var x=debts.filter(function(y){return String(y.id)===b.dataset.de})[0];if(!x)return;editDebt=x.id;setDtype(x.k);$('dwho').value=x.w;$('damt').value=x.a;$('dnote').value=x.n||'';$('ddue').value=x.d||'';$('dsave').textContent='Save changes';$('dcancel').hidden=false;$('dwho').focus();$('dwho').scrollIntoView({behavior:'smooth',block:'center'})}});
  document.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){debts=debts.filter(function(x){return String(x.id)!==b.dataset.x});dsave();rd()}});
+ rs();
 }
 function paidAmt(x){return (x.p&&!(x.pays&&x.pays.length))?x.a:paidOf(x)}
 function dstr(t){var d=new Date(t);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
