@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cedi-tracker-v3';
+const CACHE_NAME = 'cedi-tracker-v4';
 
 const APP_ASSETS = [
   './',
