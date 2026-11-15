@@ -71,10 +71,28 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 .pl{width:100%;font-size:13px;color:var(--mute);margin-top:6px}
 .pl div{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
 .pl button{margin:0;font-size:16px}
+.greet{font-size:22px;font-weight:800;margin:0 0 12px;letter-spacing:-0.5px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.greet::after{content:'✎';font-size:14px;color:var(--mute);font-weight:400}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;z-index:99}
+.modal[hidden]{display:none}
+.mbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;width:100%;max-width:360px}
+.mbox h2{margin:0 0 6px;font-size:20px}
+.mbox p{color:var(--mute);font-size:14px;margin:0 0 14px}
 </style>
 <script src="https://cloudflare.com"></script>
 </head>
 <body>
+<div class="modal" id="wmod" hidden>
+  <div class="mbox">
+    <h2 id="wtitle">Welcome to Cedi Tracker</h2>
+    <p id="wsub">Enter your name to personalize your tracker.</p>
+    <input id="wname" type="text" placeholder="Your name (e.g. Selasi)" autocomplete="given-name">
+    <button class="add" id="wgo">Continue</button>
+    <button class="ghost" id="wcancel" hidden>Cancel</button>
+  </div>
+</div>
+
+<div class="greet" id="greet" hidden></div>
 <div class="top"><h1 id="ttl">Balance this month</h1><button id="reset">Clear all</button></div>
 <select id="mon" aria-label="Choose month"></select>
 <button class="add" id="mxl" hidden style="margin-bottom:6px">Export this month (Excel)</button><p class="empty" id="mmsg" style="margin-bottom:10px"></p>
@@ -407,6 +425,42 @@ $('sshare').onclick=function(){
  else $('smsg').textContent='Sharing is not available here. Use Copy instead.'};
 $('mon').onchange=function(){viewM=this.value;render()};
 rd();
+var NK='cedi-tracker-name-v1',uname='';
+try{uname=localStorage.getItem(NK)||''}catch(e){uname=''}
+function showGreet(){
+  if(uname){
+    $('greet').textContent='Hello '+uname;
+    $('greet').hidden=false;
+    $('wmod').hidden=true;
+  }else{
+    $('wtitle').textContent='Welcome to Cedi Tracker';
+    $('wsub').textContent='Enter your name to personalize your tracker.';
+    $('wgo').textContent='Continue';
+    $('wcancel').hidden=true;
+    $('wmod').hidden=false;
+    $('wname').focus();
+  }
+}
+$('greet').onclick=function(){
+  $('wtitle').textContent='Edit your name';
+  $('wsub').textContent='Update the name shown at the top of your tracker.';
+  $('wgo').textContent='Save name';
+  $('wname').value=uname;
+  $('wcancel').hidden=false;
+  $('wmod').hidden=false;
+  $('wname').focus();
+};
+$('wcancel').onclick=function(){$('wmod').hidden=true};
+$('wgo').onclick=function(){
+  var v=$('wname').value.trim();
+  if(!v){$('wname').focus();return}
+  uname=v;
+  try{localStorage.setItem(NK,uname)}catch(e){}
+  showGreet();
+};
+$('wname').onkeydown=function(e){if(e.key==='Enter')$('wgo').click()};
+showGreet();
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
