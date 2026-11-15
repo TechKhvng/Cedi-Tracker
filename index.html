@@ -48,7 +48,7 @@ h2{font-size:16px;margin:0 0 10px}
 .row span small{display:block;color:var(--mute);font-size:13px}
 .row button{border:0;background:none;color:var(--mute);font-size:18px;margin-left:10px;cursor:pointer}
 .empty{color:var(--mute);font-size:14px;margin:0}
-.top{display:flex;justify-content:space-between;align-items:center}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
 .top button{border:1px solid var(--line);background:none;color:var(--mute);border-radius:8px;padding:4px 10px;font-family:inherit;cursor:pointer}
 .seg2{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:10px}
 .seg2 button{flex:1;padding:10px;border:0;background:none;color:var(--mute);font-weight:600;font-size:15px;font-family:inherit;cursor:pointer}
@@ -56,10 +56,11 @@ h2{font-size:16px;margin:0 0 10px}
 .dsum{display:flex;gap:10px;margin-bottom:12px}
 .dsum div{flex:1;border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;color:var(--mute)}
 .dsum b{display:block;font-size:17px}
-.row .pd{border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:13px;color:var(--ink);margin-left:8px}
+.pd{border:1px solid var(--line);background:none;border-radius:8px;padding:6px 12px;font-size:13px;font-family:inherit;color:var(--ink);cursor:pointer}
+.row .pd{padding:4px 8px;margin-left:8px}
 .row.done{opacity:.5}
 .row{flex-wrap:wrap}
-.pf{display:flex;gap:8px;width:100%;margin-top:8px}
+.pf{display:flex;gap:8px;width:100%;margin-top:8px;margin-bottom:8px}
 .pf input{margin:0;flex:1;padding:8px}
 textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:14px/1.45 ui-monospace,Menlo,monospace}
 .gh{font-size:14px;color:var(--mute);margin:12px 0 4px;font-weight:600}
@@ -81,7 +82,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 <div class="sub"><div><small>Money in</small><b class="in" id="inc">0.00</b></div><div><small>Money out</small><b class="out" id="exp">0.00</b></div></div>
 
 <div class="card">
-<div class="seg"><button data-t="out" class="on">Spent</button><button data-t="in">Received</button></div>
+<div class="seg"><button data-t="in" class="on">Received</button><button data-t="out">Spent</button></div>
 <input id="amt" type="number" inputmode="decimal" placeholder="Amount (GH₵)" min="0" step="0.01">
 <select id="cat"></select>
 <div class="pf" id="ncwrap" hidden><input id="ncat" type="text" placeholder="New category name"><button class="pd" id="ncadd">Add</button></div>
@@ -130,7 +131,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 
 <script>
 var CATS={out:['Fuel','Food','Data & airtime','School','Church','Transport','Bills','Other'],in:['Bolt','Gift','Salary','Other']};
-var type='out',items=[],viewM=today().slice(0,7);
+var type='in',items=[],viewM=today().slice(0,7);
 var KEY='cedi-tracker-v1';
 try{items=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){items=[]}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(items))}catch(e){}}
@@ -267,7 +268,7 @@ function rs(){
  [['owe','sOwe'],['owed','sOwed']].forEach(function(c){
   var gs=groupBy(c[0]),h='';
   gs.forEach(function(g,i){var b=balOf(g.items);h+='<div class="row"><span class="nm">'+esc(g.name)+'<small>'+g.items.length+(g.items.length>1?' amounts':' amount')+(b<=0.005?' · Settled':'')+'</small></span><span><b>'+fmt(b)+'</b><button class="pd" data-s="'+c[0]+'|'+i+'">Export</button></span></div>'});
-  if(gs.length)h+='<button class="pd" style="margin-top:10px" data-s="'+c[0]+'|all">Export all</button>';
+  if(gs.length)h+='<button class="pd" style="margin-top:10px;margin-bottom:8px" data-s="'+c[0]+'|all">Export all</button>';
   $(c[1]).innerHTML=h||'<p class="empty">No one yet.</p>';
  });
  document.querySelectorAll('[data-s]').forEach(function(b){b.onclick=function(){var p=b.dataset.s.split('|'),gs=groupBy(p[0]);showStmt(p[0],p[1]==='all'?gs:[gs[+p[1]]],p[1]==='all')}});
