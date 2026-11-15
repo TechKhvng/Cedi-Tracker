@@ -113,9 +113,6 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 <button class="ghost" id="dcancel" hidden>Cancel editing</button>
 <div id="dlist" style="margin-top:12px"></div></div>
 
-<div class="card"><h2>Debts I’ve paid off <span class="out" id="poT"></span></h2><div id="paidOwe"></div></div>
-<div class="card"><h2>Debts paid back to me <span class="in" id="pmT"></span></h2><div id="paidOwed"></div></div>
-
 <div class="card"><h2>Export a longer period</h2>
 <select id="pyr" aria-label="Year"></select>
 <select id="pper" aria-label="Period"><option value="q1">Quarter 1 (Jan to Mar)</option><option value="q2">Quarter 2 (Apr to Jun)</option><option value="q3">Quarter 3 (Jul to Sep)</option><option value="q4">Quarter 4 (Oct to Dec)</option><option value="h1">First half (Jan to Jun)</option><option value="h2">Second half (Jul to Dec)</option><option value="y" selected>Full year</option></select>
@@ -208,21 +205,45 @@ $('dsave').onclick=function(){
 function setDtype(k){dtype=k;document.querySelectorAll('.seg2 button').forEach(function(x){x.classList.toggle('on',x.dataset.d===k)})}
 function endDebtEdit(){editDebt=null;$('dsave').textContent='Add debt';$('dcancel').hidden=true;$('dwho').value='';$('damt').value='';$('dnote').value='';$('ddue').value=''}
 $('dcancel').onclick=endDebtEdit;
-function plist(x){return (x.pays&&x.pays.length)?'<div class="pl">'+x.pays.map(function(p,i){return '<div><span>'+(p.d||'')+' · '+(x.k==='owe'?'Paid':'Received')+' GH₵'+fmt(p.a)+'</span><button data-dp="'+x.id+'|'+i+'" aria-label="Remove payment">×</button></div>'}).join('')+'</div>':''}
+function plist(x){
+  return (x.pays&&x.pays.length)
+    ? '<div class="pl">'+x.pays.map(function(p,i){
+        return '<div><span>'+(p.d||'')+' · '+(x.k==='owe'?'Paid':'Received')+' GH₵'+fmt(p.a)+'</span>'
+          +'<span><button class="pd" data-ep="'+x.id+'|'+i+'">Edit</button>'
+          +'<button data-dp="'+x.id+'|'+i+'" aria-label="Remove payment">×</button></span></div>';
+      }).join('')+'</div>'
+    : '';
+}
 function paidOf(x){return (x.pays||[]).reduce(function(s,p){return s+p.a},0)}
 function rd(){
  var list=debts.slice().sort(function(a,b){if(a.p!==b.p)return a.p?1:-1;if(a.d&&b.d)return a.d<b.d?-1:a.d>b.d?1:0;if(a.d)return -1;if(b.d)return 1;return 0});
- var act=list.filter(function(x){return !x.p});
- var o=0,m=0;
- debts.forEach(function(x){if(!x.p){var r=x.a-paidOf(x);if(x.k==='owe')o+=r;else m+=r}});
- $('oweT').textContent='GH₵'+fmt(o);$('owedT').textContent='GH₵'+fmt(m);
- $('dlist').innerHTML=act.length?act.map(function(x){return '<div class="row'+(x.p?' done':'')+'"><span class="nm">'+esc(x.w)+(x.n?' · '+esc(x.n):'')+'<small'+((!x.p&&x.d&&x.d<today())?' class="out"':'')+'>'+(x.k==='owe'?'I owe':'Owes me')+(x.d?' · Due '+x.d+((!x.p&&x.d<today())?' (overdue)':''):'')+(paidOf(x)>0?' · Paid '+fmt(paidOf(x))+' of '+fmt(x.a):'')+'</small></span><span class="'+(x.k==='owe'?'out':'in')+'"><b>'+fmt(x.a-paidOf(x))+'</b><button class="pd" data-p="'+x.id+'">Pay in full</button><button class="pd" data-de="'+x.id+'">Edit</button><button aria-label="Delete debt" data-x="'+x.id+'">×</button></span><div class="pf"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="'+(x.k==='owe'?'Amount you paid':'Amount received')+'" aria-label="Payment amount" id="pi'+x.id+'"><button class="pd" data-pay="'+x.id+'">Record payment</button></div>'+plist(x)+'</div>'}).join(''):'<p class="empty">No unpaid debts. Add money you owe or are owed above.</p>';
- var prow=function(x){return '<div class="row"><span class="nm">'+esc(x.w)+(x.n?' · '+esc(x.n):'')+'<small>'+(x.k==='owe'?'Paid off':'Paid back to me')+(x.pd?' · '+x.pd:'')+(x.pays&&x.pays.length>1?' · '+x.pays.length+' payments':'')+'</small></span><span><b>'+fmt(x.a)+'</b><button class="pd" data-p="'+x.id+'">Undo</button><button aria-label="Delete debt" data-x="'+x.id+'">×</button></span>'+plist(x)+'</div>'};
- var po=debts.filter(function(x){return x.p&&x.k==='owe'}),pm=debts.filter(function(x){return x.p&&x.k==='owed'});
- var tot=function(a){return a.reduce(function(s,x){return s+x.a},0)};
- $('paidOwe').innerHTML=po.length?po.map(prow).join(''):'<p class="empty">Settled debts appear here once fully paid.</p>';
- $('paidOwed').innerHTML=pm.length?pm.map(prow).join(''):'<p class="empty">Debts appear here once fully paid back.</p>';
- $('poT').textContent='GH₵'+fmt(tot(po));$('pmT').textContent='GH₵'+fmt(tot(pm));rs();
+ var o=0,m=0,po=0,pm=0;
+ debts.forEach(function(x){
+   var paid=paidAmt(x);
+   if(x.k==='owe'){po+=paid;if(!x.p)o+=(x.a-paid)}
+   else{pm+=paid;if(!x.p)m+=(x.a-paid)}
+ });
+ $('oweT').textContent='GH₵'+fmt(o);
+ $('owedT').textContent='GH₵'+fmt(m);
+ if($('poT'))$('poT').textContent='GH₵'+fmt(po);
+ if($('pmT'))$('pmT').textContent='GH₵'+fmt(pm);
+
+ $('dlist').innerHTML=list.length?list.map(function(x){
+   var rem=x.a-paidOf(x);
+   return '<div class="row'+(x.p?' done':'')+'">'
+     +'<span class="nm">'+esc(x.w)+(x.n?' · '+esc(x.n):'')
+     +'<small'+((!x.p&&x.d&&x.d<today())?' class="out"':'')+'>'
+     +(x.p?(x.k==='owe'?'Paid off':'Paid back to me'):(x.k==='owe'?'I owe':'Owes me'))
+     +(x.d&&!x.p?' · Due '+x.d+(x.d<today()?' (overdue)':''):'')
+     +(paidOf(x)>0?' · Paid '+fmt(paidOf(x))+' of '+fmt(x.a):'')
+     +'</small></span>'
+     +'<span class="'+(x.k==='owe'?'out':'in')+'"><b>'+fmt(x.p?x.a:rem)+'</b>'
+     +(x.p?'<button class="pd" data-p="'+x.id+'">Undo</button>':'<button class="pd" data-p="'+x.id+'">Pay in full</button><button class="pd" data-de="'+x.id+'">Edit</button>')
+     +'<button aria-label="Delete debt" data-x="'+x.id+'">×</button></span>'
+     +(x.p?'':'<div class="pf"><input type="number" inputmode="decimal" min="0" step="0.01" placeholder="'+(x.k==='owe'?'Amount you paid':'Amount received')+'" aria-label="Payment amount" id="pi'+x.id+'"><button class="pd" data-pay="'+x.id+'">Record payment</button></div>')
+     +plist(x)+'</div>';
+ }).join(''):'<p class="empty">No debts yet. Add money you owe or are owed above.</p>';
+
  document.querySelectorAll('[data-p]').forEach(function(b){b.onclick=function(){debts.forEach(function(x){if(String(x.id)===b.dataset.p){x.pays=x.pays||[];if(!x.p){var r=x.a-paidOf(x);if(r>0)x.pays.push({a:r,d:today()});x.p=true;x.pd=today()}else{x.pays.pop();x.p=false;x.pd=''}}});dsave();rd()}});
  document.querySelectorAll('[data-pay]').forEach(function(b){b.onclick=function(){
   var inp=$('pi'+b.dataset.pay),v=parseFloat(inp.value);
@@ -232,6 +253,17 @@ function rd(){
    x.pays=x.pays||[];x.pays.push({a:v,d:today()});
    if(x.a-paidOf(x)<=0.005){x.p=true;x.pd=today()}}});
   dsave();rd()}});
+ document.querySelectorAll('[data-ep]').forEach(function(b){b.onclick=function(){
+  var q=b.dataset.ep.split('|');
+  debts.forEach(function(x){if(String(x.id)===q[0]){
+   var p=x.pays[+q[1]];if(!p)return;
+   var others=paidOf(x)-p.a,max=x.a-others;
+   var nv=parseFloat(prompt('Edit payment amount (max GH₵'+fmt(max)+'):',p.a));
+   if(!(nv>0))return;
+   if(nv>max)nv=max;
+   p.a=nv;
+   if(x.a-paidOf(x)<=0.005){x.p=true;x.pd=today()}else{x.p=false;x.pd=''}
+  }});dsave();rd()}});
  document.querySelectorAll('[data-dp]').forEach(function(b){b.onclick=function(){var q=b.dataset.dp.split('|');debts.forEach(function(x){if(String(x.id)===q[0]){x.pays.splice(+q[1],1);if(x.p&&x.a-paidOf(x)>0.005){x.p=false;x.pd=''}}});dsave();rd()}});
  document.querySelectorAll('[data-de]').forEach(function(b){b.onclick=function(){var x=debts.filter(function(y){return String(y.id)===b.dataset.de})[0];if(!x)return;editDebt=x.id;setDtype(x.k);$('dwho').value=x.w;$('damt').value=x.a;$('dnote').value=x.n||'';$('ddue').value=x.d||'';$('dsave').textContent='Save changes';$('dcancel').hidden=false;$('dwho').focus();$('dwho').scrollIntoView({behavior:'smooth',block:'center'})}});
  document.querySelectorAll('[data-x]').forEach(function(b){b.onclick=function(){debts=debts.filter(function(x){return String(x.id)!==b.dataset.x});dsave();rd()}});
