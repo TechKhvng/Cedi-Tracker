@@ -13,7 +13,6 @@
 <meta name="apple-mobile-web-app-title" content="Cedi Tracker">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- Dynamically match status bar to your --bg colors in Light and Dark modes -->
 <meta name="theme-color" content="#f4f6f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#101815" media="(prefers-color-scheme: dark)">
 
@@ -374,6 +373,10 @@ $('sshare').onclick=function(){
  else $('smsg').textContent='Sharing is not available here. Use Copy instead.'};
 $('mon').onchange=function(){viewM=this.value;render()};
 rd();
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 </body>
 </html>
+
