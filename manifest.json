@@ -3,8 +3,8 @@
   "short_name": "Cedi Tracker",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#000000",
+  "background_color": "#f4f6f5",
+  "theme_color": "#f4f6f5",
   "icons": [
     {
       "src": "icon-192.png",
