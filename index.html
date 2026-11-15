@@ -13,17 +13,17 @@
 <meta name="apple-mobile-web-app-title" content="Cedi Tracker">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<!-- Match status bar to page background in Light and Dark modes -->
+<!-- Dynamically match status bar to your --bg colors in Light and Dark modes -->
 <meta name="theme-color" content="#f4f6f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#101815" media="(prefers-color-scheme: dark)">
 
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://googleapis.com" rel="stylesheet">
 <style>
 :root{--bg:#f4f6f5;--card:#fff;--ink:#17231e;--mute:#66736d;--line:#dde4e0;--in:#0f6b52;--out:#b3402e;--gold:#d9a21b;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101815;--card:#18231e;--ink:#eaf1ed;--mute:#93a39b;--line:#2a3932;--in:#4cc9a0;--out:#f08a76;--gold:#e8b94a}}
 :root[data-theme="dark"]{--bg:#101815;--card:#18231e;--ink:#eaf1ed;--mute:#93a39b;--line:#2a3932;--in:#4cc9a0;--out:#f08a76;--gold:#e8b94a}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;max-width:560px;margin-inline:auto;padding:20px 16px 48px}
 h1{font-size:15px;font-weight:600;color:var(--mute);margin:0 0 4px}
@@ -72,13 +72,8 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 .pl div{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
 .pl button{margin:0;font-size:16px}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cloudflare.com"></script>
 </head>
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
-</script>
 <body>
 <div class="top"><h1 id="ttl">Balance this month</h1><button id="reset">Clear all</button></div>
 <select id="mon" aria-label="Choose month"></select>
