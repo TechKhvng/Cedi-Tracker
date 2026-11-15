@@ -144,6 +144,15 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 <div class="pf"><button class="pd" id="scopy">Copy</button><button class="pd" id="sshare">Share</button><button class="pd" id="sxl" hidden>Download Excel</button><button class="pd" id="sclose">Close</button></div>
 <p class="empty" id="smsg"></p></div></div>
 
+<div class="card"><h2>Backup & restore</h2>
+<p class="empty" style="margin-bottom:10px">Save a backup file of all your entries, budgets, and debts so you never lose your records when changing phones or clearing browser data.</p>
+<div class="pf" style="margin-top:0">
+  <button class="pd" id="bkp" style="flex:1">Download backup</button>
+  <button class="pd" id="rst" style="flex:1">Restore backup</button>
+</div>
+<input id="rfile" type="file" accept=".json,application/json" hidden>
+<p class="empty" id="bmsg" style="margin-top:6px"></p></div>
+
 <script>
 var CATS={out:['Fuel','Food','Data & airtime','School','Church','Transport','Bills','Other'],in:['Bolt','Gift','Salary','Other']};
 var type='in',items=[],viewM=today().slice(0,7);
@@ -460,6 +469,70 @@ $('wgo').onclick=function(){
 };
 $('wname').onkeydown=function(e){if(e.key==='Enter')$('wgo').click()};
 showGreet();
+
+  $('bkp').onclick=function(){
+  try{
+    var data={
+      app:'Cedi Tracker',
+      exported:today(),
+      name:uname,
+      items:items,
+      cats:XC,
+      budgets:budgets,
+      debts:debts
+    };
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    var u=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=u;
+    a.download='cedi-tracker-backup-'+today()+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){URL.revokeObjectURL(u)},4000);
+    $('bmsg').textContent='Backup file saved.';
+  }catch(e){
+    $('bmsg').textContent='Could not create backup file.';
+  }
+};
+
+$('rst').onclick=function(){$('rfile').value='';$('rfile').click()};
+
+$('rfile').onchange=function(){
+  var f=this.files&&this.files[0];
+  if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(){
+    try{
+      var d=JSON.parse(reader.result);
+      if(!d||d.app!=='Cedi Tracker'||!Array.isArray(d.items)){
+        $('bmsg').textContent='Invalid backup file. Please choose a Cedi Tracker backup.';
+        return;
+      }
+      if(!confirm('This will replace your current data with the backup from '+(d.exported||'unknown date')+'. Continue?'))return;
+      items=d.items||[];
+      XC=d.cats||{out:[],in:[]};
+      XC.out=XC.out||[];XC.in=XC.in||[];
+      budgets=d.budgets||{};
+      debts=d.debts||[];
+      save();
+      try{localStorage.setItem(CK,JSON.stringify(XC))}catch(e){}
+      bsaveB();
+      dsave();
+      if(d.name){
+        uname=d.name;
+        try{localStorage.setItem(NK,uname)}catch(e){}
+        showGreet();
+      }
+      fillCats();
+      render();
+      rd();
+      $('bmsg').textContent='Backup restored successfully.';
+    }catch(e){
+      $('bmsg').textContent='Could not read this file. Make sure it is a valid JSON backup.';
+    }
+  };
+  reader.readAsText(f);
+};
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
