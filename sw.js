@@ -1,9 +1,12 @@
-const CACHE_NAME = 'cedi-tracker-v5';
+const CACHE_NAME = 'cedi-tracker-v6';
 
 const LOCAL_ASSETS = [
   './',
   './index.html',
-  './manifest.json',
+  './manifest.json'
+];
+
+const OPTIONAL_ASSETS = [
   './icon-192.png',
   './icon-512.png'
 ];
@@ -19,11 +22,11 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache =>
       cache.addAll(LOCAL_ASSETS).then(() =>
         Promise.all(
-          EXTERNAL_ASSETS.map(url =>
+          OPTIONAL_ASSETS.map(url => cache.add(url).catch(() => {})).concat(EXTERNAL_ASSETS.map(url =>
             fetch(url, { mode: 'no-cors' })
               .then(res => cache.put(url, res))
               .catch(() => {})
-          )
+          ))
         )
       )
     )
