@@ -19,7 +19,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101815;--card:#18231e;--ink:#eaf1ed;--mute:#93a39b;--line:#2a3932;--in:#4cc9a0;--out:#f08a76;--gold:#e8b94a;--c1:#4cc9a0;--c2:#e8b94a;--c3:#f2994a;--c4:#f08a76}}
 :root[data-theme="dark"]{--bg:#101815;--card:#18231e;--ink:#eaf1ed;--mute:#93a39b;--line:#2a3932;--in:#4cc9a0;--out:#f08a76;--gold:#e8b94a;--c1:#4cc9a0;--c2:#e8b94a;--c3:#f2994a;--c4:#f08a76}
 html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
-*{box-sizing:border-box}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:'Bricolage Grotesque',system-ui,sans-serif;max-width:560px;margin-inline:auto;padding:12px 16px 48px}
 body.locked>*:not(#lock):not(script){visibility:hidden}
@@ -106,9 +106,9 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 .lbl{display:block;font-size:13px;color:var(--mute);margin:6px 0 3px}
 .err{color:var(--out);font-size:14px;margin:0 0 8px}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" async></script>
 </head>
-<body>
+<body class="locked">
 
 <div class="lock" id="lock" hidden>
   <div class="mbox">
@@ -349,7 +349,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 <!-- ABOUT -->
 <section class="pg" id="pg-about" hidden>
 <div class="card"><h2>About Cedi Tracker</h2>
-<p class="empty" style="line-height:1.6;color:var(--ink)">Cedi Tracker is a simple personal finance app for tracking money received and spent, monthly budgets, savings, investments and debts. Version 3.0.</p>
+<p class="empty" style="line-height:1.6;color:var(--ink)">Cedi Tracker is a simple personal finance app for tracking money received and spent, monthly budgets, savings, investments and debts. Version 3.1.</p>
 <div class="gh">What it does</div>
 <p class="empty" style="line-height:1.6">Daily, weekly and monthly totals, spending by category, budget alerts, linked savings, investment and debt records, Excel and text statements, up to 3 profiles, a PIN lock and daily summaries.</p>
 <div class="gh">Your data</div>
@@ -366,7 +366,7 @@ textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px
 /* ---------- helpers ---------- */
 var $=function(i){return document.getElementById(i)};
 function ls(k,d){try{var v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}}
-function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){if(!lsSet.w){lsSet.w=1;setTimeout(function(){alert('Could not save your data. Your phone storage may be full or blocked. Download a backup now.')},0)}return false}}
 function jget(k,d){try{var v=JSON.parse(localStorage.getItem(k));return v===null||v===undefined?d:v}catch(e){return d}}
 function jset(k,v){lsSet(k,JSON.stringify(v))}
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -496,7 +496,7 @@ function notify(t,b,tag){
  if(S.style!=='sys'||!sysOK())toast(t,b);
  if(S.style!=='app'&&sysOK()){
   var o={body:b,icon:'icon-192.png',badge:'icon-192.png',tag:tag||'cedi'};
-  if('serviceWorker' in navigator)navigator.serviceWorker.ready.then(function(r){r.showNotification(t,o)}).catch(function(){try{new Notification(t,o)}catch(e){}});
+  if('serviceWorker' in navigator)navigator.serviceWorker.getRegistration().then(function(r){if(r)return r.showNotification(t,o);new Notification(t,o)}).catch(function(){try{new Notification(t,o)}catch(e){}});
   else{try{new Notification(t,o)}catch(e){}}
  }
 }
@@ -524,7 +524,13 @@ function runSummaries(){
  if(S.eve&&n>=S.et&&L.e!==t){L.e=t;ch=true;notify('Your day in review',sumMsg(t,'Today'),'eve')}
  if(ch)jset(NLK,L);
 }
-setInterval(runSummaries,30000);
+var lastDay=today();
+function dayTick(){
+ var t=today();if(t===lastDay)return;
+ if(viewM===lastDay.slice(0,7))viewM=t.slice(0,7);
+ lastDay=t;if(!editId)$('date').value=t;$('sdate').value=t;$('smonth').value=t.slice(0,7);renderAll();
+}
+setInterval(function(){dayTick();runSummaries()},30000);
 
 /* ---------- lock ---------- */
 var LK=jget(LKK,null),locked=true,hiddenAt=0;
@@ -576,7 +582,7 @@ $('lockNow').onclick=function(){showLock()};
 document.addEventListener('visibilitychange',function(){
  if(document.hidden){hiddenAt=Date.now();return}
  if(LK&&!locked&&hiddenAt&&Date.now()-hiddenAt>30000)showLock();
- runSummaries();
+ dayTick();runSummaries();
 });
 function updBio(){
  var b=$('biobtn');b.hidden=!bioOK();
@@ -625,6 +631,7 @@ function setProfileUI(){
  $('pname').textContent=p.name;$('av').textContent=(p.name.trim()[0]||'P').toUpperCase();
 }
 function rp(){
+ $('pnew').placeholder='New profile name (e.g. Church)';
  $('plist').innerHTML=PR.list.map(function(p){
   return '<div class="row"><span class="nm"><b>'+esc(p.name)+'</b>'+(p.id===PID?'<small>Active</small>':'')+'</span><span>'+(p.id===PID?'':'<button class="pd" data-sw="'+p.id+'">Switch</button>')+'<button class="pd" data-pr="'+p.id+'">Rename</button>'+(p.id===PID?'':'<button aria-label="Delete profile" data-pdel="'+p.id+'">×</button>')+'</span></div>';
  }).join('');
@@ -670,6 +677,7 @@ function fixed(x){return !!(x.dl||x.pl||x.ob||x.tr)}
 function entryById(id){return items.filter(function(y){return String(y.id)===String(id)})[0]}
 function delEntry(id){
  var x=entryById(id);if(!x)return;
+ if(x.t==='out'&&(x.c==='Savings'||x.c==='Investment')&&fundTotal(x.c,x.id)<-0.005){alert('Deleting this would leave '+x.c.toLowerCase()+' below zero, because of withdrawals already recorded. Delete those withdrawals first.');return}
  var msg='Delete this entry ('+x.c+', '+CUR+fmt(x.a)+')?';
  if(x.dl)msg+=' The loan recorded in Debts will be removed too.';
  if(x.pl)msg+=' The payment recorded against the debt will be removed too.';
@@ -701,6 +709,7 @@ $('save').onclick=function(){
   var left=ds.a-paidAmt(ds);if(a>left+0.005){err('That is more than the '+CUR+fmt(left)+' still '+(ds.k==='owe'?'owed to ':'owed by ')+ds.w+'.');return}
  }
  if(type==='in'&&(c==='Savings'||c==='Investment')){var tot=fundTotal(c,editId);if(a>tot+0.005){err('You only have '+CUR+fmt(Math.max(tot,0))+' in '+c.toLowerCase()+'.');return}}
+ if(old&&old.t==='out'&&(old.c==='Savings'||old.c==='Investment')&&(c!==old.c||type!=='out'||a<old.a)&&fundTotal(old.c,old.id)+(type==='out'&&c===old.c?a:0)<-0.005){err('That would leave '+old.c.toLowerCase()+' below zero because of withdrawals already recorded.');return}
  var e={t:type,a:a,c:c,n:$('note').value.trim(),d:dv},x,oldC=null,oldM=null,back=!editId&&dv!==t0;
  if(editId){
   x=old;if(!x){endEdit();return}
@@ -750,7 +759,7 @@ function rh(){return '<div class="rw rh"><span></span><span>In ('+esc(CUR)+')</s
 function rw(l,i,o){return '<div class="rw"><span>'+l+'</span><span class="in">+'+fmt(i)+'</span><span class="out">-'+fmt(o)+'</span></div>'}
 function lname(x){var id=x.dl||x.pl;if(!id)return '';var d=findDebt(id);return d?d.w:''}
 function dshort(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
-function eRow(x,btns){var ln=lname(x);return '<div class="row"><span>'+esc(x.c)+(ln?' · '+esc(ln):'')+(x.n?' · '+esc(x.n):'')+'<small>'+x.d+(x.tm?' · '+x.tm:'')+'</small></span><span class="'+(x.t==='in'?'in':'out')+'"><b>'+(x.t==='in'?'+':'-')+fmt(x.a)+'</b>'+(btns?'<button class="pd" data-e="'+x.id+'">Edit</button><button aria-label="Delete entry" data-id="'+x.id+'">×</button>':'')+'</span></div>'}
+function eRow(x,btns){var ln=lname(x);return '<div class="row"><span>'+esc(x.c)+(ln?' · '+esc(ln):'')+(x.n?' · '+esc(x.n):'')+'<small>'+x.d+(x.tm?' · '+esc(x.tm):'')+'</small></span><span class="'+(x.t==='in'?'in':'out')+'"><b>'+(x.t==='in'?'+':'-')+fmt(x.a)+'</b>'+(btns?'<button class="pd" data-e="'+x.id+'">Edit</button><button aria-label="Delete entry" data-id="'+x.id+'">×</button>':'')+'</span></div>'}
 function bindEntryBtns(root){
  document.querySelectorAll(root+' [data-id]').forEach(function(b){b.onclick=function(){delEntry(b.dataset.id)}});
  document.querySelectorAll(root+' [data-e]').forEach(function(b){b.onclick=function(){startEdit(b.dataset.e)}});
@@ -861,7 +870,7 @@ function rf(id,cat){
  items.forEach(function(x){if(x.c!==cat)return;if(x.t==='out')ins+=x.a;else outs+=x.a;rows.push(x)});
  rows.sort(function(a,b){return a.d<b.d?1:a.d>b.d?-1:0});
  $(id+'T').textContent=money(ins-outs);$(id+'I').textContent=fmt(ins);$(id+'O').textContent=fmt(outs);
- var h=rows.map(function(x){var a=x.t==='out';return '<div class="row"><span>'+(a?'Added':'Withdrawn')+(x.n?' · '+esc(x.n):'')+'<small>'+x.d+(x.tm?' · '+x.tm:'')+'</small></span><span class="'+(a?'in':'out')+'"><b>'+(a?'+':'-')+fmt(x.a)+'</b></span></div>'}).join('');
+ var h=rows.map(function(x){var a=x.t==='out';return '<div class="row"><span>'+(a?'Added':'Withdrawn')+(x.n?' · '+esc(x.n):'')+'<small>'+x.d+(x.tm?' · '+esc(x.tm):'')+'</small></span><span class="'+(a?'in':'out')+'"><b>'+(a?'+':'-')+fmt(x.a)+'</b></span></div>'}).join('');
  if(op)h+='<div class="row"><span>Opening amount<small>Before using the app</small></span><span class="in"><b>+'+fmt(op)+'</b></span></div>';
  $(id+'L').innerHTML=h||'<p class="empty">Nothing recorded yet.</p>';
 }
@@ -1035,7 +1044,8 @@ $('sshare').onclick=function(){if(navigator.share)navigator.share({title:'Accoun
 
 /* ---------- excel ---------- */
 var DL={save:function(o){return new Promise(function(res,rej){try{var b=new Blob([o.data],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=o.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000);res({status:'saved'})}catch(e){rej({code:'unavailable'})}})}};
-if(typeof XLSX!=='undefined'){$('sxl').hidden=false;$('pxl').hidden=false;$('suxl').hidden=false}
+function showXl(){if(typeof XLSX!=='undefined'){$('sxl').hidden=false;$('pxl').hidden=false;$('suxl').hidden=false}}
+showXl();window.addEventListener('load',showXl);
 function shRows(g){
  var C='('+CUR+')',R=[[g.kind==='owe'?'Account statement: what I owe you':'Account statement: what you owe me'],['Name',g.name],['Date',today()],[],['#','Description','Date added','Due date','Amount '+C]],tot=0,paid=0,pays=[];
  g.items.forEach(function(x,i){
@@ -1327,7 +1337,7 @@ function cleanBackup(d){
  d.items.forEach(function(x){
   if(!x||!isNum(x.a)||x.a<=0||!isNum(x.id)||!DRE.test(x.d)||(x.t!=='in'&&x.t!=='out'))throw new Error('entry');
   var e={id:x.id,t:x.t,a:x.a,c:str(x.c)||'Other',n:str(x.n),d:x.d};
-  if(isNum(x.dl))e.dl=x.dl;if(isNum(x.pl))e.pl=x.pl;if(x.tm)e.tm=str(x.tm);if(x.ob)e.ob=1;if(x.tr)e.tr=1;out.items.push(e);
+  if(isNum(x.dl))e.dl=x.dl;if(isNum(x.pl))e.pl=x.pl;if(typeof x.tm==='string'&&/^\d{2}:\d{2}$/.test(x.tm))e.tm=x.tm;if(x.ob)e.ob=1;if(x.tr)e.tr=1;out.items.push(e);
  });
  (d.debts===undefined?[]:d.debts).forEach(function(x){
   if(!x||!isNum(x.a)||x.a<=0||!isNum(x.id)||(x.k!=='owe'&&x.k!=='owed')||(x.d&&!DRE.test(x.d))||(x.pd&&!DRE.test(x.pd)))throw new Error('debt');
@@ -1368,7 +1378,8 @@ $('rfile').onchange=function(){
 };
 
 /* ---------- render all & start ---------- */
-function renderAll(){render();rd();rsum();rf('sav','Savings');rf('inv','Investment');fillYears();rx();rPrompts();rtr();if(!$('debtbox').hidden)fillDsel()}
+function resetPh(){$('amt').placeholder='Amount ('+CUR+')';$('damt').placeholder='Amount ('+CUR+')';$('dwho').placeholder="Person's name"}
+function renderAll(){resetPh();render();rd();rsum();rf('sav','Savings');rf('inv','Investment');fillYears();rx();rPrompts();rtr();if(!$('debtbox').hidden)fillDsel()}
 applyCur();applyHide();fillCats();fillBCats();setProfileUI();updStat();updBio();
 renderAll();showGreet();showPage('home');
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
